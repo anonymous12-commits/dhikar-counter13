@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Islamic Dhikr Counter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #232526, #414345);
+      color: white;
+      text-align: center;
+    }
+
+    header {
+      padding: 20px;
+      background: #009977;
+      font-size: 24px;
+    }
+
+    .container {
+      padding: 30px 20px;
+    }
+
+    .dhikr-select {
+      margin-bottom: 20px;
+    }
+
+    select {
+      font-size: 18px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    .counter {
+      font-size: 48px;
+      margin: 30px 0;
+      color: #00ffcc;
+    }
+
+    .buttons button {
+      font-size: 20px;
+      padding: 15px 25px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      background: #00cc99;
+      color: white;
+      cursor: pointer;
+    }
+
+    .buttons button:hover {
+      background: #00775a;
+    }
+
+    .dark {
+      background: #121212;
+      color: #f0f0f0;
+    }
+
+    .dark .counter {
+      color: #66ffcc;
+    }
+
+    .toggle-theme {
+      margin-top: 20px;
+      font-size: 16px;
+      cursor: pointer;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <header>🕌 Islamic Dhikr Counter</header>
+  <div class="container">
+    <div class="dhikr-select">
+      <label for="dhikr">Choose Dhikr: </label>
+      <select id="dhikr">
+        <option value="subhanallah">SubhanAllah (33)</option>
+        <option value="alhamdulillah">Alhamdulillah (33)</option>
+        <option value="allahuakbar">Allahu Akbar (34)</option>
+        <option value="laillaha">La ilaha illallah (33)</option>
+        <option value="lahawla">La Hawla Wala Quwwata illa Billah (99)</option>
+        <option value="astagfirullah">Astagfirullah (1000)</option>
+        <option value="surahnaas">Surah Naas (3)</option>
+        <option value="surahfalag">Surah Falag (3)</option>
+        <option value="surahikhlas">Surah Ikhlaas (3)</option>
+        <option value="surahmulk">Surah Mulk (1)</option>
+        <option value="ayatulkursi">Ayatul Kursi (1)</option>
+        <option value="baqarahend">Last 2 Verses of Surah Baqarah (1)</option>
+        <option value="sleepdua">Dua before Sleeping (1)</option>
+      </select>
+    </div>
+
+    <div class="counter" id="counter">0 / 33</div>
+
+    <div class="buttons">
+      <button onclick="toggleAutoStart()" id="autoBtn">⚙️ Auto Start: Off</button>
+      <button onclick="start()">▶ Start</button>
+      <button onclick="pause()">⏸ Pause</button>
+      <button onclick="resume()">🔁 Resume</button>
+      <button onclick="reset()">🔄 Reset</button>
+    </div>
+
+    <div class="toggle-theme" onclick="toggleTheme()">🌓 Toggle Night Mode</div>
+  </div>
+
+  <audio id="beep" src="https://www.soundjay.com/buttons/beep-07.mp3"></audio>
+
+  <script>
+    const tickOnly = ["surahnaas", "surahfalag", "surahikhlas", "surahmulk", "ayatulkursi", "baqarahend", "sleepdua"];
+
+    const dhikrMap = {
+      subhanallah: { label: "SubhanAllah", target: 33 },
+      alhamdulillah: { label: "Alhamdulillah", target: 33 },
+      allahuakbar: { label: "Allahu Akbar", target: 34 },
+      laillaha: { label: "La ilaha illallah", target: 33 },
+      lahawla: { label: "La Hawla Wala Quwwata illa Billah", target: 99 },
+      astagfirullah: { label: "Astagfirullah", target: 1000 },
+      surahnaas: { label: "Surah Naas", target: 3 },
+      surahfalag: { label: "Surah Falag", target: 3 },
+      surahikhlas: { label: "Surah Ikhlaas", target: 3 },
+      surahmulk: { label: "Surah Mulk", target: 1 },
+      ayatulkursi: { label: "Ayatul Kursi", target: 1 },
+      baqarahend: { label: "Last 2 Verses of Surah Baqarah", target: 1 },
+      sleepdua: { label: "Dua before Sleeping", target: 1 }
+    };
+
+    const dhikrOrder = Object.keys(dhikrMap);
+
+    const dhikrSelect = document.getElementById("dhikr");
+    const counterEl = document.getElementById("counter");
+    const beep = document.getElementById("beep");
+
+    let count = 0;
+    let interval = null;
+    let autoStart = false;
+
+    function loadProgress() {
+      const selected = dhikrSelect.value;
+      const saved = localStorage.getItem(`count_${selected}`);
+      count = saved ? parseInt(saved) : 0;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      const dhikr = dhikrMap[dhikrSelect.value];
+      counterEl.textContent = `${count} / ${dhikr.target}`;
+    }
+
+    function start() {
+      const currentDhikr = dhikrSelect.value;
+      let gap = 1000;
+      if (currentDhikr === "lahawla") {
+        gap = 3000;
+      } else if (currentDhikr === "laillaha") {
+        gap = 2000;
+      }
+
+      if (tickOnly.includes(currentDhikr)) {
+        if (count < dhikrMap[currentDhikr].target) {
+          beep.play();
+          count++;
+          localStorage.setItem(`count_${currentDhikr}`, count);
+          updateDisplay();
+        }
+        if (count >= dhikrMap[currentDhikr].target) {
+          moveToNextDhikr();
+        }
+        return;
+      }
+
+      if (!interval) {
+        interval = setInterval(() => {
+          const dhikr = dhikrMap[currentDhikr];
+          if (count < dhikr.target) {
+            beep.play();
+            count++;
+            localStorage.setItem(`count_${currentDhikr}`, count);
+            updateDisplay();
+          } else {
+            clearInterval(interval);
+            interval = null;
+            moveToNextDhikr();
+          }
+        }, gap);
+      }
+    }
+
+    function moveToNextDhikr() {
+      const current = dhikrSelect.value;
+      const index = dhikrOrder.indexOf(current);
+      const nextIndex = (index + 1) % dhikrOrder.length;
+      dhikrSelect.value = dhikrOrder[nextIndex];
+      count = 0;
+      updateDisplay();
+      if (autoStart) start();
+    }
+
+    function pause() {
+      clearInterval(interval);
+      interval = null;
+    }
+
+    function resume() {
+      start();
+    }
+
+    function reset() {
+      clearInterval(interval);
+      interval = null;
+      count = 0;
+      localStorage.setItem(`count_${dhikrSelect.value}`, 0);
+      updateDisplay();
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+    }
+
+    dhikrSelect.addEventListener("change", () => {
+      loadProgress();
+    });
+
+    window.onload = () => {
+      dhikrSelect.value = dhikrOrder[0];
+      count = 0;
+      updateDisplay();
+      document.getElementById("autoBtn").textContent = autoStart ? "⚙️ Auto Start: On" : "⚙️ Auto Start: Off";
+    };
+
+    function toggleAutoStart() {
+      autoStart = !autoStart;
+      const btn = document.getElementById("autoBtn");
+      btn.textContent = autoStart ? "⚙️ Auto Start: On" : "⚙️ Auto Start: Off";
+      btn.style.backgroundColor = autoStart ? '#00775a' : '#00cc99';
+    }
+  </script>
+</body>
+</html>
